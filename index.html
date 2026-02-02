@@ -1,3 +1,6 @@
+<!DOCTYPE html>
+<html lang="en">
+
 <!--
 Landing Page
 •    As a user I want to view top 5 rented films of all times
@@ -5,3 +8,38 @@ Landing Page
 •    As a user I want to be able to view top 5 actors that are part of films I have in the store
 •    As a user I want to be able to view the actor’s details and view their top 5 rented films
 -->
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sakila Film Rentals</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Sakila Film Rentals</h1>
+    
+    <button id="top5Button" onclick="loadTop5Rented()">Show Top 5 Rented Films</button>
+    
+    <div id="results"></div>
+
+    <script>
+        async function loadTop5Rented() {
+            try {
+                const response = await fetch('http://localhost:5000/api/top5rented');
+                const data = await response.json();
+                
+                let html = '<h2>Top 5 Rented Films</h2><ul>';
+                data.forEach(film => {
+                    html += `<li>${film.title} - Rentals: ${film.rental_count}</li>`;
+                });
+                html += '</ul>';
+                
+                document.getElementById('results').innerHTML = html;
+            } catch (error) {
+                document.getElementById('results').innerHTML = '<p>Error loading data. Make sure the backend server is running.</p>';
+                console.error('Error:', error);
+            }
+        }
+    </script>
+</body>
+</html>
