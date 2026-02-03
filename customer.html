@@ -8,3 +8,64 @@ Customer Page
 •    As a user I want to be able to view customer details and see their past and present rental history
 •    As a user I want to be able to indicate that a customer has returned a rented movie
 -->
+
+<!DOCTYPE html>
+<html lang="en">
+
+<!--As a user I want to view a list of all customers (Pref. using pagination)-->
+<!--To Do: Pagination is not done and reformat tables to show only data necessary. This is still rough but works.-->
+<!--To Do: Formatting and style guide changes so all pages follow similar style-->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customers</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <h1>Customers</h1>
+    <button onclick="loadCustomers()">Show All Customers</button>
+
+    <div id="results"></div>
+
+    <script>
+        async function loadCustomers() {
+            try {
+                const response = await fetch('http://localhost:5000/api/allcustomers');
+                const data = await response.json();
+
+                let html = `
+                    <h2>Customer List</h2>
+                    <table border="2" cellpadding="10">
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Active</th>
+                        </tr>
+                `;
+
+                data.forEach(customer => {
+                    html += `
+                        <tr>
+                            <td>${customer.customer_id}</td>
+                            <td>${customer.name}</td>
+                            <td>${customer.email}</td>
+                            <td>${customer.active}</td>
+                        </tr>
+                    `;
+                });
+
+                html += '</table>';
+
+                document.getElementById('results').innerHTML = html;
+
+            } catch (error) {
+                document.getElementById('results').innerHTML =
+                    '<p>Error loading customers! Something went wrong :( </p>';
+                console.error(error);
+            }
+        }
+    </script>
+</body>
+</html>
