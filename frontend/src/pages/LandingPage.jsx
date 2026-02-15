@@ -186,7 +186,7 @@ function LandingPage() {
               >
                 <ul>
                   {topActors.map((actor) => (
-                    <li key={actor.actor_id}>
+                    <li key={actor.actor_id} className="top-actors-item">
                       {actor.name} ({actor.movies} films)
                     </li>
                   ))}

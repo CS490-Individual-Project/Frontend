@@ -195,6 +195,15 @@ body {
   transition: background 220ms ease, border-color 220ms ease;
 }
 
+.top-actors-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+}
+
 .clickable-film-item:hover,
 .clickable-film-item:focus-within {
   background: #d1d5db;
