@@ -124,8 +124,9 @@ function LandingPage() {
     <section className="landing-page">
       {error && <p className="error-text">{error}</p>}
 
-      <div className="landing-sections">
-        <div className="landing-section-films">
+      <div className="container-fluid px-3">
+        <div className="row g-4">
+          <div className="col-6">
           <div className="card top-films-card">
             <button
               type="button"
@@ -167,9 +168,9 @@ function LandingPage() {
               </div>
             )}
           </div>
-        </div>
+          </div>
 
-        <div className="landing-section-actors">
+          <div className="col-6">
           <div className="card top-actors-card">
             <button
               type="button"
@@ -193,6 +194,7 @@ function LandingPage() {
                 </ul>
               </div>
             )}
+          </div>
           </div>
         </div>
       </div>

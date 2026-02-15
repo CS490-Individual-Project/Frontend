@@ -67,7 +67,7 @@ body {
 }
 
 .app-content {
-  max-width: 960px;
+  /* max-width: 1320px; */
   margin: 0 auto;
   padding: 1.5rem;
 }
@@ -83,25 +83,6 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 1rem;
-}
-
-.landing-sections {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
-  align-items: start;
-  width: calc(100vw - 2rem);
-  margin-left: calc(50% - 50vw + 1rem);
-}
-
-.landing-section-films {
-  width: 100%;
-  justify-self: start;
-}
-
-.landing-section-actors {
-  width: 100%;
-  justify-self: end;
 }
 
 .search-form {
@@ -284,17 +265,3 @@ body {
   }
 }
 
-@media (max-width: 900px) {
-  .landing-sections {
-    grid-template-columns: 1fr;
-    width: 100%;
-    margin-left: 0;
-  }
-
-  .landing-section-films,
-  .landing-section-actors {
-    width: 100%;
-    margin-right: 0;
-    margin-left: 0;
-  }
-}
