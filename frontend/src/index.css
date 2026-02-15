@@ -33,6 +33,11 @@ body {
   font-weight: 700;
 }
 
+.app-header h1 a {
+  color: inherit;
+  text-decoration: none;
+}
+
 .app-nav {
   display: flex;
   align-items: center;

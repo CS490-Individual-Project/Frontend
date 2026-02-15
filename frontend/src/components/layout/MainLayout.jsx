@@ -1,10 +1,10 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, Link } from 'react-router-dom'
 
 function MainLayout() {
   return (
     <div className="app-shell">
       <header className="app-header">
-        <h1>TA-NK Movies</h1>
+        <h1><Link to="/index">TA-NK Movies</Link></h1>
         <nav className="app-nav" aria-label="Primary">
           <NavLink to="/index">Index</NavLink>
           <NavLink to="/customers">Customers</NavLink>
