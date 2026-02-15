@@ -89,11 +89,13 @@ body {
   display: flex;
   gap: 0.75rem;
   align-items: end;
+  font-family: 'Onest', sans-serif;
   margin-bottom: 1rem;
 }
 
 .search-form label {
   display: block;
+  font-family: 'Onest', sans-serif;
   font-size: 0.875rem;
 }
 
@@ -109,6 +111,7 @@ body {
 
 .error-text {
   color: #b91c1c;
+  font-family: 'Onest', sans-serif;
 }
 
 .top-list-button {
