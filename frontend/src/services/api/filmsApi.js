@@ -8,6 +8,10 @@ export function getTopFiveActors() {
   return request('/top5actors')
 }
 
+export function getFilmDetails(filmId) {
+  return request(`/get_filmdetails?film_id=${encodeURIComponent(filmId)}`)
+}
+
 export function searchFilms(searchTerm) {
   const encodedTerm = encodeURIComponent(searchTerm)
   return request(`/searchfilms?search=${encodedTerm}`)
