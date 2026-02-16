@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
-import { getFilmDetails, getTopFiveActors, getTopFiveRentedFilms } from '../services/api/filmsApi'
+import { getActorDetails, getFilmDetails, getTopFiveActors, getTopFiveRentedFilms } from '../services/api/filmsApi'
 
 function LandingPage() {
   const [topFilms, setTopFilms] = useState([])
   const [topActors, setTopActors] = useState([])
   const [filmDetailsById, setFilmDetailsById] = useState({})
   const [selectedFilmId, setSelectedFilmId] = useState(null)
+  const [actorDetailsById, setActorDetailsById] = useState({})
+  const [selectedActorId, setSelectedActorId] = useState(null)
   const [showTopFilms, setShowTopFilms] = useState(false)
   const [isClosingTopFilms, setIsClosingTopFilms] = useState(false)
   const [showTopActors, setShowTopActors] = useState(false)
@@ -106,6 +108,62 @@ function LandingPage() {
     }
   }
 
+  async function handleActorClick(actorId) {
+    const isSameActor = selectedActorId === actorId
+    setSelectedActorId(isSameActor ? null : actorId)
+
+    if (isSameActor) {
+      return
+    }
+
+    const existingDetail = actorDetailsById[actorId]
+    if (existingDetail && existingDetail.status !== 'error') {
+      return
+    }
+
+    setActorDetailsById((prevDetails) => ({
+      ...prevDetails,
+      [actorId]: {
+        status: 'loading',
+        films: [],
+      },
+    }))
+
+    try {
+      const details = await getActorDetails(actorId)
+      const detailRows = Array.isArray(details) ? details : [details]
+      const filmTitles = detailRows
+        .map((row) => {
+          if (typeof row?.title === 'string' && row.title.trim().length > 0) {
+            return row.title
+          }
+
+          if (Array.isArray(row) && typeof row[3] === 'string' && row[3].trim().length > 0) {
+            return row[3]
+          }
+
+          return null
+        })
+        .filter((title) => typeof title === 'string' && title.trim().length > 0)
+
+      setActorDetailsById((prevDetails) => ({
+        ...prevDetails,
+        [actorId]: {
+          status: filmTitles.length > 0 ? 'success' : 'error',
+          films: filmTitles,
+        },
+      }))
+    } catch {
+      setActorDetailsById((prevDetails) => ({
+        ...prevDetails,
+        [actorId]: {
+          status: 'error',
+          films: [],
+        },
+      }))
+    }
+  }
+
   function getFilmDetailData(filmId) {
     const filmDetailRecord = filmDetailsById[filmId]
     const filmDetail = filmDetailRecord?.data
@@ -124,6 +182,15 @@ function LandingPage() {
             { label: 'Replacement Cost', value: `$${filmDetail.replacement_cost ?? 'N/A'}` },
           ]
         : [],
+    }
+  }
+
+  function getActorDetailData(actorId) {
+    const actorDetailRecord = actorDetailsById[actorId]
+
+    return {
+      status: actorDetailRecord?.status ?? 'idle',
+      films: actorDetailRecord?.films ?? [],
     }
   }
 
@@ -205,11 +272,35 @@ function LandingPage() {
                 onAnimationEnd={handleTopActorsAnimationEnd}
               >
                 <ul>
-                  {topActors.map((actor) => (
-                    <li key={actor.actor_id} className="top-actors-item">
-                      {actor.name} ({actor.movies} films)
-                    </li>
-                  ))}
+                  {topActors.map((actor) => {
+                    const isSelectedActor = selectedActorId === actor.actor_id
+                    const actorDetailData = getActorDetailData(actor.actor_id)
+
+                    return (
+                      <li key={actor.actor_id} className="actor-row-item">
+                        <button
+                          type="button"
+                          className="clickable-actor-item"
+                          onClick={() => handleActorClick(actor.actor_id)}
+                          aria-expanded={isSelectedActor}
+                        >
+                          {actor.name} ({actor.movies} films)
+                        </button>
+
+                        <div className={isSelectedActor ? 'actor-detail-dropdown open' : 'actor-detail-dropdown'}>
+                          {actorDetailData.status === 'loading' && <p className="film-detail-state">Loading details...</p>}
+                          {actorDetailData.status === 'error' && <p className="film-detail-state">Details unavailable</p>}
+                          {actorDetailData.status === 'success' && (
+                            <ul className="actor-film-list">
+                              {actorDetailData.films.slice(0, 5).map((title) => (
+                                <li key={title} className="actor-film-item">{title}</li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      </li>
+                    )
+                  })}
                 </ul>
               </div>
             )}

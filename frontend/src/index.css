@@ -194,17 +194,27 @@ body {
   color: #1f2937;
 }
 
-.top-actors-item {
+
+.clickable-actor-item {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   width: 100%;
-  padding: 0.7rem 0.85rem;
-  border: 1px solid transparent;
+  border: 1px solid #e5e7eb;
   border-radius: 8px;
+  background: #f3f4f6;
+  padding: 0.7rem 0.85rem;
+  cursor: pointer;
+  overflow: hidden;
+  transition: background 220ms ease, border-color 220ms ease;
+  text-align: left;
+  color: #1f2937;
 }
 
 .clickable-film-item:hover,
-.clickable-film-item:focus-within {
+.clickable-film-item:focus-within,
+.clickable-actor-item:hover,
+.clickable-actor-item:focus-within {
   background: #d1d5db;
   border-color: #9ca3af;
 }
@@ -217,7 +227,24 @@ body {
   width: 100%;
 }
 
+.actor-row-item {
+  width: 100%;
+}
+
 .film-detail-dropdown {
+  max-height: 0;
+  opacity: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  margin-top: 0;
+  padding: 0 0.85rem;
+  border-radius: 8px;
+  background: #eceef3;
+  transform: translateY(-6px);
+  transition: max-height 620ms cubic-bezier(0.16, 1, 0.3, 1), opacity 420ms ease, margin-top 620ms cubic-bezier(0.16, 1, 0.3, 1), padding-top 620ms cubic-bezier(0.16, 1, 0.3, 1), padding-bottom 620ms cubic-bezier(0.16, 1, 0.3, 1), transform 620ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.actor-detail-dropdown {
   max-height: 0;
   opacity: 0;
   overflow-x: hidden;
@@ -237,6 +264,15 @@ body {
   padding-top: 0.75rem;
   padding-bottom: 0.75rem;
   opacity: 1;
+  transform: translateY(0);
+}
+
+.actor-detail-dropdown.open {
+  max-height: 520px;
+  opacity: 1;
+  margin-top: 0.55rem;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
   transform: translateY(0);
 }
 
@@ -273,6 +309,24 @@ body {
   font-size: 0.98rem;
   font-weight: 600;
   color: #374151;
+}
+
+.actor-film-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.actor-film-item {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.45;
+  color: #1f2937;
+  padding: 0.2rem 0;
+}
+
+.actor-film-item + .actor-film-item {
+  margin-top: 0.5rem;
 }
 
 @keyframes topListDropdownIn {
