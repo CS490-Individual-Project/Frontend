@@ -41,7 +41,7 @@ function FilmsPage() {
       {error && <p className="error-text">{error}</p>}
 
       <form onSubmit={handleSearch} className="search-form">
-        <label htmlFor="film-search">Search films</label>
+        {/* <label htmlFor="film-search">Search films</label> */}
         <input
           id="film-search"
           type="text"
