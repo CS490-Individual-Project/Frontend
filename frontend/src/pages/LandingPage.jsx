@@ -5,7 +5,7 @@ function LandingPage() {
   const [topFilms, setTopFilms] = useState([])
   const [topActors, setTopActors] = useState([])
   const [filmDetailsById, setFilmDetailsById] = useState({})
-  const [hoveredFilmId, setHoveredFilmId] = useState(null)
+  const [selectedFilmId, setSelectedFilmId] = useState(null)
   const [showTopFilms, setShowTopFilms] = useState(false)
   const [isClosingTopFilms, setIsClosingTopFilms] = useState(false)
   const [showTopActors, setShowTopActors] = useState(false)
@@ -63,8 +63,13 @@ function LandingPage() {
     }
   }
 
-  async function handleFilmHover(filmId) {
-    setHoveredFilmId(filmId)
+  async function handleFilmClick(filmId) {
+    const isSameFilm = selectedFilmId === filmId
+    setSelectedFilmId(isSameFilm ? null : filmId)
+
+    if (isSameFilm) {
+      return
+    }
 
     const existingDetail = filmDetailsById[filmId]
     if (existingDetail && existingDetail.status !== 'error') {
@@ -101,23 +106,25 @@ function LandingPage() {
     }
   }
 
-  function getFilmDetailLabel(filmId) {
+  function getFilmDetailData(filmId) {
     const filmDetailRecord = filmDetailsById[filmId]
     const filmDetail = filmDetailRecord?.data
 
-    if (!filmDetailRecord) {
-      return ''
+    return {
+      status: filmDetailRecord?.status ?? 'idle',
+      attributes: filmDetail
+        ? [
+            { label: 'Rating', value: filmDetail.rating ?? 'N/A' },
+            { label: 'Release Year', value: filmDetail.release_year ?? 'N/A' },
+            { label: 'Length', value: `${filmDetail.length ?? 'N/A'} min` },
+            { label: 'Description', value: filmDetail.description ?? 'N/A' },
+            { label: 'Language', value: filmDetail.language ?? 'N/A' },
+            { label: 'Rental Duration', value: `${filmDetail.rental_duration ?? 'N/A'} days` },
+            { label: 'Rental Rate', value: `$${filmDetail.rental_rate ?? 'N/A'}` },
+            { label: 'Replacement Cost', value: `$${filmDetail.replacement_cost ?? 'N/A'}` },
+          ]
+        : [],
     }
-
-    if (filmDetailRecord.status === 'loading') {
-      return 'Loading details...'
-    }
-
-    if (filmDetailRecord.status === 'error') {
-      return 'Details unavailable'
-    }
-
-    return `${filmDetail.release_year ?? ''} • ${filmDetail.rating ?? ''} • ${filmDetail.length ?? ''} min`
   }
 
   return (
@@ -143,24 +150,36 @@ function LandingPage() {
               >
                 <ul>
                   {topFilms.map((film) => {
-                    const isHoveredFilm = hoveredFilmId === film.film_id
-                    const detailLabel = getFilmDetailLabel(film.film_id)
+                    const isSelectedFilm = selectedFilmId === film.film_id
+                    const detailData = getFilmDetailData(film.film_id)
 
                     return (
-                    <li
-                      key={film.film_id}
-                      className="clickable-film-item"
-                      onMouseEnter={() => handleFilmHover(film.film_id)}
-                      onMouseLeave={() => setHoveredFilmId(null)}
-                      onFocus={() => handleFilmHover(film.film_id)}
-                      onBlur={() => setHoveredFilmId(null)}
-                    >
-                      <span className="film-main-text">
-                        {film.title} ({film.rental_count} rentals)
-                      </span>
-                      <span className={isHoveredFilm ? 'film-inline-details open' : 'film-inline-details'}>
-                        {detailLabel}
-                      </span>
+                    <li key={film.film_id} className="film-row-item">
+                      <button
+                        type="button"
+                        className="clickable-film-item"
+                        onClick={() => handleFilmClick(film.film_id)}
+                        aria-expanded={isSelectedFilm}
+                      >
+                        <span className="film-main-text">
+                          {film.title} ({film.rental_count} rentals)
+                        </span>
+                      </button>
+
+                      <div className={isSelectedFilm ? 'film-detail-dropdown open' : 'film-detail-dropdown'}>
+                        {detailData.status === 'loading' && <p className="film-detail-state">Loading details...</p>}
+                        {detailData.status === 'error' && <p className="film-detail-state">Details unavailable</p>}
+                        {detailData.status === 'success' && (
+                          <ul className="film-detail-list">
+                            {detailData.attributes.map((attribute) => (
+                              <li key={attribute.label} className="film-detail-attribute">
+                                <span className="film-detail-label">{attribute.label}:</span>
+                                <span className="film-detail-value">{attribute.value}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
                     </li>
                     )
                   })}
