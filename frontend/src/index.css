@@ -276,8 +276,8 @@ body {
   transition: opacity 150ms ease-in-out, transform 150ms ease-in-out;
 }
 
-.clickable-film-item:hover::after,
-.clickable-film-item:focus-visible::after {
+.clickable-film-item[data-match]:hover::after,
+.clickable-film-item[data-match]:focus-visible::after {
   opacity: 1;
   transform: translateY(0);
 }
