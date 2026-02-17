@@ -109,6 +109,33 @@ body {
   padding: 0.5rem 0.75rem;
 }
 
+.search-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.search-filter-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: 'Onest', sans-serif;
+  font-size: 0.96rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.search-filter-option input {
+  margin: 0;
+}
+
+.films-search-list {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+}
+
 .error-text {
   color: #b91c1c;
   font-family: 'Onest', sans-serif;
@@ -185,13 +212,14 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  position: relative;
   width: 100%;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   background: #f3f4f6;
   padding: 0.7rem 0.85rem;
   cursor: pointer;
-  overflow: hidden;
+  overflow: visible;
   transition: background 220ms ease, border-color 220ms ease;
   text-align: left;
   color: #1f2937;
@@ -226,8 +254,171 @@ body {
   white-space: nowrap;
 }
 
+.clickable-film-item::after {
+  content: attr(data-match);
+  position: absolute;
+  left: 0.6rem;
+  top: calc(100% + 0.28rem);
+  z-index: 3;
+  max-width: calc(100% - 1.2rem);
+  padding: 0.28rem 0.48rem;
+  border-radius: 6px;
+  border: 1px solid #9ca3af;
+  background: #eceef3;
+  color: #1f2937;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: normal;
+  opacity: 0;
+  transform: translateY(-4px);
+  pointer-events: none;
+  transition: opacity 150ms ease-in-out, transform 150ms ease-in-out;
+}
+
+.clickable-film-item:hover::after,
+.clickable-film-item:focus-visible::after {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .film-row-item {
   width: 100%;
+}
+
+.film-row-header {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.film-title-button {
+  flex: 1;
+}
+
+.availability-badge {
+  border: 1px solid #9ca3af;
+  background: #eceef3;
+  color: #1f2937;
+  border-radius: 8px;
+  padding: 0.42rem 0.66rem;
+  font-family: 'Onest', sans-serif;
+  font-size: 0.86rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.availability-badge.unavailable {
+  border-color: #b91c1c;
+  color: #b91c1c;
+}
+
+.rent-movie-button {
+  border: 1px solid #f3e27a;
+  background: #f8eb8c;
+  color: #1f2937;
+  border-radius: 8px;
+  padding: 0.55rem 0.8rem;
+  font-family: 'Onest', sans-serif;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 150ms ease-in-out;
+}
+
+.rent-movie-button:hover,
+.rent-movie-button:focus-visible {
+  background: #e4cc63;
+}
+
+.film-rent-dropdown {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  margin-top: 0;
+  padding: 0 0.85rem;
+  border-radius: 8px;
+  background: #eceef3;
+  transform: translateY(-6px);
+  transition: max-height 620ms cubic-bezier(0.16, 1, 0.3, 1), opacity 420ms ease, margin-top 620ms cubic-bezier(0.16, 1, 0.3, 1), padding-top 620ms cubic-bezier(0.16, 1, 0.3, 1), padding-bottom 620ms cubic-bezier(0.16, 1, 0.3, 1), transform 620ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.film-rent-dropdown.open {
+  max-height: 260px;
+  opacity: 1;
+  margin-top: 0.55rem;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  transform: translateY(0);
+}
+
+.rent-film-form {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.rent-mode-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.rent-mode-row label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.rent-input {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 0.42rem 0.55rem;
+  font-family: 'Onest', sans-serif;
+  font-size: 0.92rem;
+}
+
+.rent-name-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+}
+
+.rent-action-row {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.rent-submit-button {
+  border: 1px solid #9ca3af;
+  background: #f3f4f6;
+  color: #1f2937;
+  border-radius: 6px;
+  padding: 0.4rem 0.72rem;
+  font-family: 'Onest', sans-serif;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.rent-submit-button:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.rent-status {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.rent-status.success {
+  color: #166534;
+}
+
+.rent-status.error {
+  color: #b91c1c;
 }
 
 .actor-row-item {
