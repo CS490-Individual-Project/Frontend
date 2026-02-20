@@ -37,10 +37,16 @@ function CustomersPage() {
 
       <div className="card">
         <p>Total customers: {customers.length}</p>
-        <ul>
+        <ul className="films-search-list">
           {visibleCustomers.map((customer) => (
-            <li key={customer.customer_id}>
-              {customer.first_name} {customer.last_name} ({customer.email})
+            <li key={customer.customer_id} className="film-row-item">
+              <div className="film-row-header">
+                <div className="clickable-actor-item film-title-button">
+                  <span className="film-main-text">
+                    {customer.first_name} {customer.last_name} (id: {customer.customer_id})
+                  </span>
+                </div>
+              </div>
             </li>
           ))}
         </ul>
