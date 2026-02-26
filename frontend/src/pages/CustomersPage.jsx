@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { getAllCustomers, returnFilm } from '../services/api/customersApi'
+import { getAllCustomers, returnFilm, deleteCustomer } from '../services/api/customersApi'
 import { request } from '../services/api/httpClient'
 
 function CustomersPage() {
+    const [isDeletingCustomerId, setIsDeletingCustomerId] = useState(null)
   const [customers, setCustomers] = useState([])
   const [error, setError] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
@@ -62,6 +63,25 @@ function CustomersPage() {
   }
 
   function handleReturnButtonClick(customerId) {
+      async function handleDeleteCustomer(customerId) {
+        setIsDeletingCustomerId(customerId)
+        setError('')
+        try {
+          await deleteCustomer(customerId)
+          setCustomers((prev) => prev.filter((c) => c.customer_id !== customerId))
+          setSelectedCustomerId(null)
+          setReturningCustomerId(null)
+          setCustomerDetailsById((prev) => {
+            const updated = { ...prev }
+            delete updated[customerId]
+            return updated
+          })
+        } catch (err) {
+          setError(err.message || 'Failed to delete customer.')
+        } finally {
+          setIsDeletingCustomerId(null)
+        }
+      }
     if (returningCustomerId === customerId) {
       setReturningCustomerId(null)
       resetReturnForm()
@@ -94,6 +114,14 @@ function CustomersPage() {
         message: response?.message ?? 'Film returned successfully.',
       })
       setReturnRentalId('')
+
+      // Refresh customer details after return
+      try {
+        const updatedDetails = await request(`/get_customerdetails?customer_id=${customerId}`)
+        setCustomerDetailsById((prev) => ({ ...prev, [customerId]: updatedDetails }))
+      } catch {
+        // Optionally handle error
+      }
     } catch (submitError) {
       setReturnStatus({
         type: 'error',
@@ -138,6 +166,15 @@ function CustomersPage() {
                   >
                     Return
                   </button>
+                  <button
+                    type="button"
+                    className="rent-movie-button"
+                    style={{ marginLeft: '8px' }}
+                    onClick={() => handleDeleteCustomer(customer.customer_id)}
+                    disabled={isDeletingCustomerId === customer.customer_id}
+                  >
+                    {isDeletingCustomerId === customer.customer_id ? 'Deleting...' : 'Delete'}
+                  </button>
                 </div>
 
                 <div className={isReturningCustomer ? 'film-rent-dropdown open' : 'film-rent-dropdown'}>
@@ -177,10 +214,6 @@ function CustomersPage() {
                           <li className="film-detail-attribute">
                             <span className="film-detail-label">Email:</span>
                             <span className="film-detail-value">{customerDetailsById[customer.customer_id].email}</span>
-                          </li>
-                          <li className="film-detail-attribute">
-                            <span className="film-detail-label">Address:</span>
-                            <span className="film-detail-value">{customerDetailsById[customer.customer_id].address}</span>
                           </li>
                           <li className="film-detail-attribute">
                             <span className="film-detail-label">Active:</span>
