@@ -319,6 +319,15 @@ function FilmsPage() {
         type: 'success',
         message: response?.message ?? 'Successfully rented.',
       })
+
+      // Update only the availability number for the rented film
+      setFilms((prevFilms) =>
+        prevFilms.map((film) =>
+          film.film_id === filmId
+            ? { ...film, available_copies: (film.available_copies || 0) - 1 }
+            : film
+        )
+      );
     } catch (error) {
       setRentStatus({
         type: 'error',
