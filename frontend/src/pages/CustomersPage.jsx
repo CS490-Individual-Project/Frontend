@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
-import { getAllCustomers, returnFilm, deleteCustomer } from '../services/api/customersApi'
+import { getAllCustomers, returnFilm, deleteCustomer, editCustomer } from '../services/api/customersApi'
 import { request } from '../services/api/httpClient'
 
 function CustomersPage() {
-    const [isDeletingCustomerId, setIsDeletingCustomerId] = useState(null)
+  const [isDeletingCustomerId, setIsDeletingCustomerId] = useState(null)
   const [customers, setCustomers] = useState([])
   const [error, setError] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
@@ -16,6 +16,16 @@ function CustomersPage() {
   })
   const [isSubmittingReturn, setIsSubmittingReturn] = useState(false)
   const [customerDetailsById, setCustomerDetailsById] = useState({})
+
+  // Edit customer state
+  const [editingCustomerId, setEditingCustomerId] = useState(null)
+  const [editFormData, setEditFormData] = useState({
+    first_name: '',
+    last_name: '',
+    email: ''
+  })
+  const [editStatus, setEditStatus] = useState({ type: '', message: '' })
+  const [isSubmittingEdit, setIsSubmittingEdit] = useState(false)
   const customersPerPage = 40
 
   useEffect(() => {
@@ -42,19 +52,81 @@ function CustomersPage() {
   }
 
   function handleCustomerClick(customerId) {
-      const isSameCustomer = selectedCustomerId === customerId
-      setSelectedCustomerId(isSameCustomer ? null : customerId)
+    const isSameCustomer = selectedCustomerId === customerId
+    setSelectedCustomerId(isSameCustomer ? null : customerId)
+    // Close edit form if we're selecting a different customer or collapsing cur customer
+    setEditingCustomerId(null)
 
-      if (!isSameCustomer && !customerDetailsById[customerId]) {
-        // Fetch details if not already loaded
-        request(`/get_customerdetails?customer_id=${customerId}`)
-          .then((data) => {
-            setCustomerDetailsById((prev) => ({ ...prev, [customerId]: data }))
-          })
-          .catch(() => {
-            setCustomerDetailsById((prev) => ({ ...prev, [customerId]: { error: 'Unable to load details.' } }))
-          })
+    if (!isSameCustomer && !customerDetailsById[customerId]) {
+      // Fetch details if not already loaded
+      request(`/get_customerdetails?customer_id=${customerId}`)
+        .then((data) => {
+          setCustomerDetailsById((prev) => ({ ...prev, [customerId]: data }))
+        })
+        .catch(() => {
+          setCustomerDetailsById((prev) => ({ ...prev, [customerId]: { error: 'Unable to load details.' } }))
+        })
+    }
+  }
+
+  function handleEditClick(customerId) {
+    if (editingCustomerId === customerId) {
+      setEditingCustomerId(null)
+      return
+    }
+
+    const details = customerDetailsById[customerId]
+    if (details && !details.error) {
+      setEditingCustomerId(customerId)
+      setEditFormData({
+        first_name: details.first_name || '',
+        last_name: details.last_name || '',
+        email: details.email || '',
+      })
+      setEditStatus({ type: '', message: '' })
+    }
+  }
+
+  async function handleEditSubmit(event, customerId) {
+    event.preventDefault()
+    setEditStatus({ type: '', message: '' })
+
+    try {
+      setIsSubmittingEdit(true)
+      const payload = {
+        customer_id: customerId,
+        ...editFormData,
       }
+
+      const response = await editCustomer(payload)
+      setEditStatus({ type: 'success', message: response?.message || 'Customer updated.' })
+
+      // Update local state without full refetch if possible
+      setCustomers((prev) =>
+        prev.map(c => c.customer_id === customerId
+          ? { ...c, first_name: editFormData.first_name, last_name: editFormData.last_name, email: editFormData.email }
+          : c)
+      )
+
+      setCustomerDetailsById((prev) => ({
+        ...prev,
+        [customerId]: {
+          ...prev[customerId],
+          first_name: editFormData.first_name,
+          last_name: editFormData.last_name,
+          email: editFormData.email
+        }
+      }))
+
+      setTimeout(() => {
+        setEditingCustomerId(null)
+      }, 1500)
+
+    } catch (err) {
+      setEditStatus({ type: 'error', message: err.message || 'Failed to update customer.' })
+    } finally {
+      setIsSubmittingEdit(false)
+    }
   }
 
   function resetReturnForm() {
@@ -63,25 +135,25 @@ function CustomersPage() {
   }
 
   function handleReturnButtonClick(customerId) {
-      async function handleDeleteCustomer(customerId) {
-        setIsDeletingCustomerId(customerId)
-        setError('')
-        try {
-          await deleteCustomer(customerId)
-          setCustomers((prev) => prev.filter((c) => c.customer_id !== customerId))
-          setSelectedCustomerId(null)
-          setReturningCustomerId(null)
-          setCustomerDetailsById((prev) => {
-            const updated = { ...prev }
-            delete updated[customerId]
-            return updated
-          })
-        } catch (err) {
-          setError(err.message || 'Failed to delete customer.')
-        } finally {
-          setIsDeletingCustomerId(null)
-        }
+    async function handleDeleteCustomer(customerId) {
+      setIsDeletingCustomerId(customerId)
+      setError('')
+      try {
+        await deleteCustomer(customerId)
+        setCustomers((prev) => prev.filter((c) => c.customer_id !== customerId))
+        setSelectedCustomerId(null)
+        setReturningCustomerId(null)
+        setCustomerDetailsById((prev) => {
+          const updated = { ...prev }
+          delete updated[customerId]
+          return updated
+        })
+      } catch (err) {
+        setError(err.message || 'Failed to delete customer.')
+      } finally {
+        setIsDeletingCustomerId(null)
       }
+    }
     if (returningCustomerId === customerId) {
       setReturningCustomerId(null)
       resetReturnForm()
@@ -202,32 +274,90 @@ function CustomersPage() {
                 </div>
 
                 <div className={isSelectedCustomer ? 'film-detail-dropdown open' : 'film-detail-dropdown'}>
-                    {isSelectedCustomer && customerDetailsById[customer.customer_id] ? (
-                      customerDetailsById[customer.customer_id].error ? (
-                        <p className="film-detail-state">{customerDetailsById[customer.customer_id].error}</p>
-                      ) : (
-                        <ul className="film-detail-list">
-                          <li className="film-detail-attribute">
-                            <span className="film-detail-label">Customer ID:</span>
-                            <span className="film-detail-value">{customerDetailsById[customer.customer_id].customer_id}</span>
-                          </li>
-                          <li className="film-detail-attribute">
-                            <span className="film-detail-label">Email:</span>
-                            <span className="film-detail-value">{customerDetailsById[customer.customer_id].email}</span>
-                          </li>
-                          <li className="film-detail-attribute">
-                            <span className="film-detail-label">Active:</span>
-                            <span className="film-detail-value">{customerDetailsById[customer.customer_id].active ? 'Yes' : 'No'}</span>
-                          </li>
-                          <li className="film-detail-attribute">
-                            <span className="film-detail-label">Active Rentals:</span>
-                            <span className="film-detail-value">{customerDetailsById[customer.customer_id].active_rentals || 'None'}</span>
-                          </li>
-                        </ul>
-                      )
+                  {isSelectedCustomer && customerDetailsById[customer.customer_id] ? (
+                    customerDetailsById[customer.customer_id].error ? (
+                      <p className="film-detail-state">{customerDetailsById[customer.customer_id].error}</p>
                     ) : (
-                      <p className="film-detail-state">Loading details...</p>
-                    )}
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        {editingCustomerId === customer.customer_id ? (
+                          <form className="rent-film-form" onSubmit={(e) => handleEditSubmit(e, customer.customer_id)} style={{ marginTop: 0, border: 'none', background: 'transparent', padding: 0 }}>
+                            <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                              <input
+                                type="text"
+                                className="rent-input"
+                                placeholder="First Name"
+                                value={editFormData.first_name}
+                                onChange={(e) => setEditFormData({ ...editFormData, first_name: e.target.value })}
+                                required
+                              />
+                              <input
+                                type="text"
+                                className="rent-input"
+                                placeholder="Last Name"
+                                value={editFormData.last_name}
+                                onChange={(e) => setEditFormData({ ...editFormData, last_name: e.target.value })}
+                                required
+                              />
+                            </div>
+                            <input
+                              type="email"
+                              className="rent-input"
+                              placeholder="Email"
+                              value={editFormData.email}
+                              onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                              style={{ marginBottom: '10px' }}
+                            />
+                            <div className="rent-action-row">
+                              <button type="submit" className="rent-submit-button" disabled={isSubmittingEdit}>
+                                {isSubmittingEdit ? 'Saving...' : 'Save Changes'}
+                              </button>
+                              <button type="button" className="rent-submit-button" onClick={() => setEditingCustomerId(null)} style={{ background: 'var(--bg-lighter)' }}>
+                                Cancel
+                              </button>
+                            </div>
+
+                            {editStatus.message && (
+                              <p className={editStatus.type === 'success' ? 'rent-status success' : 'rent-status error'}>
+                                {editStatus.message}
+                              </p>
+                            )}
+                          </form>
+                        ) : (
+                          <>
+                            <ul className="film-detail-list">
+                              <li className="film-detail-attribute">
+                                <span className="film-detail-label">Customer ID:</span>
+                                <span className="film-detail-value">{customerDetailsById[customer.customer_id].customer_id}</span>
+                              </li>
+                              <li className="film-detail-attribute">
+                                <span className="film-detail-label">Email:</span>
+                                <span className="film-detail-value">{customerDetailsById[customer.customer_id].email}</span>
+                              </li>
+                              <li className="film-detail-attribute">
+                                <span className="film-detail-label">Active:</span>
+                                <span className="film-detail-value">{customerDetailsById[customer.customer_id].active ? 'Yes' : 'No'}</span>
+                              </li>
+                              <li className="film-detail-attribute">
+                                <span className="film-detail-label">Active Rentals:</span>
+                                <span className="film-detail-value">{customerDetailsById[customer.customer_id].active_rentals || 'None'}</span>
+                              </li>
+                            </ul>
+                            <div style={{ marginTop: '12px' }}>
+                              <button
+                                type="button"
+                                className="rent-movie-button"
+                                onClick={() => handleEditClick(customer.customer_id)}
+                              >
+                                Edit
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )
+                  ) : (
+                    <p className="film-detail-state">Loading details...</p>
+                  )}
                 </div>
               </li>
             )

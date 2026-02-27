@@ -16,6 +16,13 @@ export function addCustomer(payload) {
     body: JSON.stringify(payload),
   })
 }
+
+export function editCustomer(payload) {
+  return request('/editcustomer', {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  })
+}
 // matched format of films page rent for returns on customer page 
 export async function returnFilm(payload) {
   const response = await fetch(`${API_BASE_URL}/returnfilm`, {
