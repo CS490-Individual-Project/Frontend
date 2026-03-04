@@ -4,6 +4,8 @@ import { request } from '../services/api/httpClient'
 
 function CustomersPage() {
   const [isDeletingCustomerId, setIsDeletingCustomerId] = useState(null)
+  const [deleteErrorCustomerId, setDeleteErrorCustomerId] = useState(null)
+  const [deleteError, setDeleteError] = useState('')
   const [customers, setCustomers] = useState([])
   const [error, setError] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
@@ -134,26 +136,29 @@ function CustomersPage() {
     setReturnStatus({ type: '', message: '' })
   }
 
-  function handleReturnButtonClick(customerId) {
-    async function handleDeleteCustomer(customerId) {
-      setIsDeletingCustomerId(customerId)
-      setError('')
-      try {
-        await deleteCustomer(customerId)
-        setCustomers((prev) => prev.filter((c) => c.customer_id !== customerId))
-        setSelectedCustomerId(null)
-        setReturningCustomerId(null)
-        setCustomerDetailsById((prev) => {
-          const updated = { ...prev }
-          delete updated[customerId]
-          return updated
-        })
-      } catch (err) {
-        setError(err.message || 'Failed to delete customer.')
-      } finally {
-        setIsDeletingCustomerId(null)
-      }
+  async function handleDeleteCustomer(customerId) {
+    setIsDeletingCustomerId(customerId)
+    setDeleteError('')
+    setDeleteErrorCustomerId(null)
+    try {
+      await deleteCustomer(customerId)
+      setCustomers((prev) => prev.filter((c) => c.customer_id !== customerId))
+      setSelectedCustomerId(null)
+      setReturningCustomerId(null)
+      setCustomerDetailsById((prev) => {
+        const updated = { ...prev }
+        delete updated[customerId]
+        return updated
+      })
+    } catch (err) {
+      setDeleteError(err.message || 'Failed to delete customer.')
+      setDeleteErrorCustomerId(customerId)
+    } finally {
+      setIsDeletingCustomerId(null)
     }
+  }
+
+  function handleReturnButtonClick(customerId) {
     if (returningCustomerId === customerId) {
       setReturningCustomerId(null)
       resetReturnForm()
@@ -207,7 +212,6 @@ function CustomersPage() {
   return (
     <section>
       <h2>Customers</h2>
-      {error && <p className="error-text">{error}</p>}
 
       <div className="card">
         <p>Total customers: {customers.length}</p>
@@ -237,15 +241,6 @@ function CustomersPage() {
                     aria-expanded={isReturningCustomer}
                   >
                     Return
-                  </button>
-                  <button
-                    type="button"
-                    className="rent-movie-button"
-                    style={{ marginLeft: '8px' }}
-                    onClick={() => handleDeleteCustomer(customer.customer_id)}
-                    disabled={isDeletingCustomerId === customer.customer_id}
-                  >
-                    {isDeletingCustomerId === customer.customer_id ? 'Deleting...' : 'Delete'}
                   </button>
                 </div>
 
@@ -342,7 +337,7 @@ function CustomersPage() {
                                 <span className="film-detail-value">{customerDetailsById[customer.customer_id].active_rentals || 'None'}</span>
                               </li>
                             </ul>
-                            <div style={{ marginTop: '12px' }}>
+                            <div style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
                               <button
                                 type="button"
                                 className="rent-movie-button"
@@ -350,7 +345,18 @@ function CustomersPage() {
                               >
                                 Edit
                               </button>
+                              <button
+                                type="button"
+                                className="rent-movie-button"
+                                onClick={() => handleDeleteCustomer(customer.customer_id)}
+                                disabled={isDeletingCustomerId === customer.customer_id}
+                              >
+                                {isDeletingCustomerId === customer.customer_id ? 'Deleting...' : 'Delete'}
+                              </button>
                             </div>
+                            {deleteErrorCustomerId === customer.customer_id && deleteError && (
+                              <p className="error-text" style={{ marginTop: '12px', marginBottom: 0 }}>{deleteError}</p>
+                            )}
                           </>
                         )}
                       </div>

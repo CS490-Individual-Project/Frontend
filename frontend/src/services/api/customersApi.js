@@ -42,21 +42,33 @@ export async function returnFilm(payload) {
   return responseData
 }
 
-//delete customer
-export async function deleteCustomer(payload) {
-  // Backend expects customer_id as query parameter, not JSON body
-  const customer_id = typeof payload === 'object' ? payload.customer_id : payload
-  // Ensure correct endpoint path (no double 'api')
-  const endpoint = API_BASE_URL.endsWith('/api')
-    ? `${API_BASE_URL}/deletecustomer?customer_id=${encodeURIComponent(customer_id)}`
-    : `${API_BASE_URL}/api/deletecustomer?customer_id=${encodeURIComponent(customer_id)}`
-  const response = await fetch(endpoint, {
-    method: 'PUT',
-  })
-  const responseData = await response.json().catch(() => ({}))
-  if (!response.ok) {
-    const errorMessage = responseData?.error ?? responseData?.message ?? 'Unable to delete customer.'
-    throw new Error(errorMessage)
+export async function deleteCustomer(customerId) {
+  const id = typeof customerId === 'object' ? customerId.customer_id : customerId
+  console.log('deleteCustomer called with:', id)
+  
+  const endpoint = `${API_BASE_URL}/deletecustomer?customer_id=${encodeURIComponent(id)}`
+  console.log('deleteCustomer endpoint:', endpoint)
+  
+  try {
+    const response = await fetch(endpoint, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+    
+    const responseData = await response.json().catch(() => ({}))
+    console.log('deleteCustomer response status:', response.status)
+    console.log('deleteCustomer response data:', responseData)
+    
+    if (!response.ok) {
+      const errorMessage = responseData?.error ?? 'Unable to delete customer.'
+      throw new Error(errorMessage)
+    }
+    
+    return responseData
+  } catch (error) {
+    console.error('deleteCustomer error:', error)
+    throw error
   }
-  return responseData
 }
