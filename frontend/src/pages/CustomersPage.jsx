@@ -337,6 +337,17 @@ function CustomersPage() {
                                 <span className="film-detail-value">{customerDetailsById[customer.customer_id].active_rentals || 'None'}</span>
                               </li>
                             </ul>
+
+                            {/* Past Rentals Section */}
+                            <div style={{ marginTop: '16px' }}>
+                              <h4 style={{ marginTop: 0, marginBottom: '8px', fontSize: '0.95rem', fontWeight: '600' }}>Rental History</h4>
+                              {customerDetailsById[customer.customer_id].past_rentals ? (
+                                <p style={{ fontSize: '0.9rem', margin: 0 }}>{customerDetailsById[customer.customer_id].past_rentals}</p>
+                              ) : (
+                                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', margin: 0 }}>None</p>
+                              )}
+                            </div>
+
                             <div style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
                               <button
                                 type="button"
