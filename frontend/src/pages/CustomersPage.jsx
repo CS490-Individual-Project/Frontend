@@ -382,13 +382,14 @@ function CustomersPage() {
         </ul>
 
         {totalPages > 1 && (
-          <nav aria-label="Customers pagination">
-            <ul className="pagination justify-content-center">
+          <nav aria-label="Customers pagination" style={{ marginTop: '24px' }}>
+            <ul className="pagination justify-content-center" style={{ gap: '6px' }}>
               <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
                 <button
                   type="button"
-                  className="page-link"
+                  className="rent-movie-button"
                   onClick={() => changePage(currentPage - 1)}
+                  disabled={currentPage === 1}
                 >
                   Previous
                 </button>
@@ -396,7 +397,12 @@ function CustomersPage() {
 
               {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
                 <li key={page} className={`page-item ${currentPage === page ? 'active' : ''}`}>
-                  <button type="button" className="page-link" onClick={() => changePage(page)}>
+                  <button 
+                    type="button" 
+                    className={`rent-movie-button ${currentPage === page ? 'active' : ''}`}
+                    onClick={() => changePage(page)}
+                    style={currentPage === page ? { opacity: '0.7' } : {}}
+                  >
                     {page}
                   </button>
                 </li>
@@ -405,8 +411,9 @@ function CustomersPage() {
               <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
                 <button
                   type="button"
-                  className="page-link"
+                  className="rent-movie-button"
                   onClick={() => changePage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
                 >
                   Next
                 </button>
