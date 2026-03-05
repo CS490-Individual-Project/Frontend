@@ -1,6 +1,74 @@
 import { useEffect, useState } from 'react'
-import { getAllCustomers, returnFilm, deleteCustomer, editCustomer } from '../services/api/customersApi'
+import { getAllCustomers, searchCustomers, returnFilm, deleteCustomer, editCustomer, addCustomer } from '../services/api/customersApi'
 import { request } from '../services/api/httpClient'
+
+function getCustomerMatchContext(customer, searchValue, searchFilters) {
+  const term = searchValue.trim().toLowerCase()
+  if (!term) {
+    return []
+  }
+
+  const contexts = []
+  const customerId = String(customer.customer_id ?? '')
+
+  if (searchFilters.customerId && customerId.toLowerCase().includes(term)) {
+    contexts.push(`Customer ID: ${customerId}`)
+  }
+
+  if (searchFilters.firstName && customer.first_name?.toLowerCase().includes(term)) {
+    contexts.push(`First Name: ${customer.first_name}`)
+  }
+
+  if (searchFilters.lastName && customer.last_name?.toLowerCase().includes(term)) {
+    contexts.push(`Last Name: ${customer.last_name}`)
+  }
+
+  return contexts
+}
+
+function filterCustomersBySelection(customers, searchValue, searchFilters) {
+  const term = searchValue.trim().toLowerCase()
+  if (!term) {
+    return customers
+  }
+
+  return customers.filter((customer) => getCustomerMatchContext(customer, term, searchFilters).length > 0)
+}
+
+function normalizeCustomerRecord(customer) {
+  const firstName = customer.first_name ?? customer.firstName ?? ''
+  const lastName = customer.last_name ?? customer.lastName ?? ''
+
+  if (firstName || lastName) {
+    return {
+      ...customer,
+      first_name: firstName,
+      last_name: lastName,
+    }
+  }
+
+  const fullName = typeof customer.name === 'string' ? customer.name.trim() : ''
+  if (!fullName) {
+    return customer
+  }
+
+  const [fallbackFirstName, ...rest] = fullName.split(' ')
+  const fallbackLastName = rest.join(' ')
+
+  return {
+    ...customer,
+    first_name: fallbackFirstName ?? '',
+    last_name: fallbackLastName ?? '',
+  }
+}
+
+function normalizeCustomerList(customers) {
+  if (!Array.isArray(customers)) {
+    return []
+  }
+
+  return customers.map(normalizeCustomerRecord)
+}
 
 function CustomersPage() {
   const [isDeletingCustomerId, setIsDeletingCustomerId] = useState(null)
@@ -18,8 +86,21 @@ function CustomersPage() {
   })
   const [isSubmittingReturn, setIsSubmittingReturn] = useState(false)
   const [customerDetailsById, setCustomerDetailsById] = useState({})
-
-  // Edit customer state
+  const [searchTerm, setSearchTerm] = useState('')
+  const [searchFilters, setSearchFilters] = useState({
+    customerId: true,
+    firstName: true,
+    lastName: true,
+  })
+  const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false)
+  const [isSubmittingAdd, setIsSubmittingAdd] = useState(false)
+  const [addStatus, setAddStatus] = useState({ type: '', message: '' })
+  const [addFormData, setAddFormData] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    address_id: '',
+  })
   const [editingCustomerId, setEditingCustomerId] = useState(null)
   const [editFormData, setEditFormData] = useState({
     first_name: '',
@@ -34,7 +115,7 @@ function CustomersPage() {
     async function loadCustomers() {
       try {
         const data = await getAllCustomers()
-        setCustomers(data)
+        setCustomers(normalizeCustomerList(data))
         setCurrentPage(1)
       } catch {
         setError('Unable to load customers.')
@@ -53,14 +134,112 @@ function CustomersPage() {
     setCurrentPage(page)
   }
 
+  function handleFilterChange(filterKey) {
+    setSearchFilters((prevFilters) => ({
+      ...prevFilters,
+      [filterKey]: !prevFilters[filterKey],
+    }))
+  }
+
+  async function handleSearch(event) {
+    event.preventDefault()
+
+    if (!searchTerm.trim()) {
+      try {
+        setError('')
+        const allCustomers = await getAllCustomers()
+        setCustomers(normalizeCustomerList(allCustomers))
+        setCurrentPage(1)
+      } catch {
+        setError('Unable to load customers.')
+      }
+      return
+    }
+
+    const hasSearchFilterSelected = Object.values(searchFilters).some(Boolean)
+    if (!hasSearchFilterSelected) {
+      setError('Select at least one search filter: customer ID, first name, or last name.')
+      return
+    }
+
+    try {
+      setError('')
+      const data = await searchCustomers(searchTerm)
+      const normalizedCustomers = normalizeCustomerList(data)
+      const filteredCustomers = filterCustomersBySelection(normalizedCustomers, searchTerm, searchFilters)
+      setCustomers(filteredCustomers)
+      setCurrentPage(1)
+      setSelectedCustomerId(null)
+      setReturningCustomerId(null)
+    } catch {
+      setError('Unable to search customers.')
+    }
+  }
+
+  function handleAddCustomerToggle() {
+    setIsAddCustomerOpen((prev) => !prev)
+    setAddStatus({ type: '', message: '' })
+  }
+
+  function handleAddFormChange(field, value) {
+    setAddFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }))
+  }
+
+  async function handleAddCustomerSubmit(event) {
+    event.preventDefault()
+    setAddStatus({ type: '', message: '' })
+
+    const payload = {
+      store_id: 1,
+      first_name: addFormData.first_name.trim(),
+      last_name: addFormData.last_name.trim(),
+      email: addFormData.email.trim(),
+      address_id: Number(addFormData.address_id),
+    }
+
+    if (!payload.first_name || !payload.last_name || !payload.email || !payload.address_id) {
+      setAddStatus({ type: 'error', message: 'Fill in all required customer fields.' })
+      return
+    }
+
+    try {
+      setIsSubmittingAdd(true)
+      const response = await addCustomer(payload)
+      setAddStatus({ type: 'success', message: response?.message || 'Customer added.' })
+
+      const refreshedCustomers = await getAllCustomers()
+      setCustomers(normalizeCustomerList(refreshedCustomers))
+      setCurrentPage(1)
+      setSearchTerm('')
+      setSelectedCustomerId(null)
+      setReturningCustomerId(null)
+
+      setAddFormData({
+        first_name: '',
+        last_name: '',
+        email: '',
+        address_id: '',
+      })
+      setIsAddCustomerOpen(false)
+    } catch (submitError) {
+      setAddStatus({
+        type: 'error',
+        message: submitError?.message || 'Unable to add customer.',
+      })
+    } finally {
+      setIsSubmittingAdd(false)
+    }
+  }
+
   function handleCustomerClick(customerId) {
     const isSameCustomer = selectedCustomerId === customerId
     setSelectedCustomerId(isSameCustomer ? null : customerId)
-    // Close edit form if we're selecting a different customer or collapsing cur customer
     setEditingCustomerId(null)
 
     if (!isSameCustomer && !customerDetailsById[customerId]) {
-      // Fetch details if not already loaded
       request(`/get_customerdetails?customer_id=${customerId}`)
         .then((data) => {
           setCustomerDetailsById((prev) => ({ ...prev, [customerId]: data }))
@@ -103,7 +282,6 @@ function CustomersPage() {
       const response = await editCustomer(payload)
       setEditStatus({ type: 'success', message: response?.message || 'Customer updated.' })
 
-      // Update local state without full refetch if possible
       setCustomers((prev) =>
         prev.map(c => c.customer_id === customerId
           ? { ...c, first_name: editFormData.first_name, last_name: editFormData.last_name, email: editFormData.email }
@@ -169,7 +347,6 @@ function CustomersPage() {
     setSelectedCustomerId(customerId)
     resetReturnForm()
   }
-  // return by rental id
   async function handleReturnSubmit(event, customerId) {
     event.preventDefault()
     setReturnStatus({ type: '', message: '' })
@@ -192,13 +369,10 @@ function CustomersPage() {
       })
       setReturnRentalId('')
 
-      // Refresh customer details after return
       try {
         const updatedDetails = await request(`/get_customerdetails?customer_id=${customerId}`)
         setCustomerDetailsById((prev) => ({ ...prev, [customerId]: updatedDetails }))
-      } catch {
-        // Optionally handle error
-      }
+      } catch {}
     } catch (submitError) {
       setReturnStatus({
         type: 'error',
@@ -212,6 +386,120 @@ function CustomersPage() {
   return (
     <section>
       <h2>Customers</h2>
+
+      <div className="customers-toolbar">
+        <form onSubmit={handleSearch} className="search-form customer-search-form">
+          <input
+            id="customer-search"
+            type="text"
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            placeholder="Customer ID, first name, or last name"
+          />
+          <button type="submit">Search</button>
+        </form>
+
+        <div className="add-customer-anchor">
+          <button
+            type="button"
+            className="rent-movie-button"
+            onClick={handleAddCustomerToggle}
+            aria-expanded={isAddCustomerOpen}
+          >
+            Add Customer
+          </button>
+
+          <div className={isAddCustomerOpen ? 'add-customer-panel open' : 'add-customer-panel'} aria-hidden={!isAddCustomerOpen}>
+            <div className="add-customer-panel-header">
+              <h3>Add Customer</h3>
+              <button type="button" className="add-customer-close" onClick={handleAddCustomerToggle} aria-label="Close add customer form">
+                ×
+              </button>
+            </div>
+
+            <form className="rent-film-form add-customer-form" onSubmit={handleAddCustomerSubmit}>
+              <input
+                type="number"
+                className="rent-input"
+                placeholder="Address ID"
+                value={addFormData.address_id}
+                onChange={(event) => handleAddFormChange('address_id', event.target.value)}
+                min="1"
+                required
+              />
+
+              <div className="add-customer-name-row">
+                <input
+                  type="text"
+                  className="rent-input"
+                  placeholder="First Name"
+                  value={addFormData.first_name}
+                  onChange={(event) => handleAddFormChange('first_name', event.target.value)}
+                  required
+                />
+                <input
+                  type="text"
+                  className="rent-input"
+                  placeholder="Last Name"
+                  value={addFormData.last_name}
+                  onChange={(event) => handleAddFormChange('last_name', event.target.value)}
+                  required
+                />
+              </div>
+
+              <input
+                type="email"
+                className="rent-input"
+                placeholder="Email"
+                value={addFormData.email}
+                onChange={(event) => handleAddFormChange('email', event.target.value)}
+                required
+              />
+
+              <div className="rent-action-row">
+                <button type="submit" className="rent-submit-button" disabled={isSubmittingAdd}>
+                  {isSubmittingAdd ? 'Adding...' : 'Confirm Add'}
+                </button>
+              </div>
+
+              {addStatus.message && (
+                <p className={addStatus.type === 'success' ? 'rent-status success' : 'rent-status error'}>
+                  {addStatus.message}
+                </p>
+              )}
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div className="search-filter-row" role="group" aria-label="Customer search filters">
+        <label className="search-filter-option">
+          <input
+            type="checkbox"
+            checked={searchFilters.customerId}
+            onChange={() => handleFilterChange('customerId')}
+          />
+          Customer ID
+        </label>
+        <label className="search-filter-option">
+          <input
+            type="checkbox"
+            checked={searchFilters.firstName}
+            onChange={() => handleFilterChange('firstName')}
+          />
+          First Name
+        </label>
+        <label className="search-filter-option">
+          <input
+            type="checkbox"
+            checked={searchFilters.lastName}
+            onChange={() => handleFilterChange('lastName')}
+          />
+          Last Name
+        </label>
+      </div>
+
+      {error && <p className="error-text">{error}</p>}
 
       <div className="card">
         <p>Total customers: {customers.length}</p>
@@ -338,7 +626,6 @@ function CustomersPage() {
                               </li>
                             </ul>
 
-                            {/* Past Rentals Section */}
                             <div style={{ marginTop: '16px' }}>
                               <h4 style={{ marginTop: 0, marginBottom: '8px', fontSize: '0.95rem', fontWeight: '600' }}>Rental History</h4>
                               {customerDetailsById[customer.customer_id].past_rentals ? (
